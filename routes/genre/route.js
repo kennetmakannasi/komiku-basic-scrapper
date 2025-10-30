@@ -18,9 +18,12 @@ router.use('/list', async function (req, res) {
             const genreTitle = genreTitleElement ? genreTitleElement.title.replaceAll('Komik ', '') : null;
             const genreLink = genreTitleElement ? genreTitleElement.href : null;
             const genreSlug = genreTitleElement ? genreTitleElement.href.slice(25, -1) : null;
+            const totalAmmountElement = genreTitleElement ? genreTitleElement.innerText.match(/\(([\d.]+)\)/) : null;
+            const totalAmmount = totalAmmountElement ? totalAmmountElement[1] : null
             return {
                 slug: genreSlug,
                 title: genreTitle,
+                total: totalAmmount,
                 link: genreLink
             };
         })
@@ -65,7 +68,7 @@ router.use('/:slug', async function (req,res) {
     })
 
     res.status(200).json({
-        "message": `${param} genre`,
+        "message": `${param[0].toUpperCase() + param.slice(1)} genre`,
         "data":datas    
     })  
 })
