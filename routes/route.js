@@ -1,11 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const puppeteer = require('puppeteer');
+const { getBrowser } = require('../utils/browser');
 
 router.use('/terbaru', async function (req, res) {
 
-    const browser = await puppeteer.launch();
+    const browser = await getBrowser();
     const page = await browser.newPage();
+
     await page.goto('https://komiku.org/pustaka/',{
         waitUntil: "domcontentloaded",
     });
@@ -40,17 +42,53 @@ router.use('/terbaru', async function (req, res) {
     })
 })
 
-router.use('/list', async function (req, res) {
-
-    const browser = await puppeteer.launch();
+router.use('/populer', async function (req,res) {
+    const browser = await getBrowser();
     const page = await browser.newPage();
-    await page.goto('https://komiku.org/daftar-komik/',{
+
+    await page.goto('https://komiku.org',{
         waitUntil: "domcontentloaded",
     });
 
-    const html = await page.content();
-    await page.waitForSelector('div.ls4');
     const datas = await page.evaluate(()=>{
+
+        const section = document.querySelector('section#Komik_Hot_Manga')
+        const divElement = section.querySelectorAll('div.perapih div.ls112 div.ls12 article.ls2')
+
+        const divDatas = Array.from(divElement).map(item=>{
+            const title = item.querySelector('div.ls2j h3 a').innerText;
+            const img = item.querySelector('div.ls2v a img').src
+            const linkElement = item.querySelector('div.ls2v a');
+            const link = linkElement ? linkElement.href : null;
+            const slug = link.slice(25).replaceAll("/","");
+
+            return{
+                slug: slug,
+                title: title,
+                img_url: img,
+                link: link,
+            }
+        });
+
+        return divDatas
+    })
+
+    res.status(200).json({
+        data:datas
+    })
+})
+
+router.use('/list', async function (req, res) {
+    try{
+        const browser = await puppeteer.launch();
+            const page = await browser.newPage();
+        await page.goto('https://komiku.org/daftar-komik/',{
+            waitUntil: "domcontentloaded",
+        });
+
+        const html = await page.content();
+        await page.waitForSelector('div.ls4');
+        const datas = await page.evaluate(()=>{
         const divElement = document.querySelectorAll('div.ls4');
         
         const divDatas = Array.from(divElement).map(item=>{
@@ -75,26 +113,32 @@ router.use('/list', async function (req, res) {
             return{
                 slug: slug,
                 title: title,
-                img_url: img,
-                desc: desc,
-                link: link
-            }
+                    img_url: img,
+                    desc: desc,
+                    link: link
+                }
+            })
+
+            return divDatas
         })
 
-        return divDatas
-    })
-
-    res.status(200).json({
-        "data":datas    
-    })
+        res.status(200).json({
+            "data":datas    
+        })
+    }catch{
+        res.status(200).json({
+            "error":"error"
+        })
+    }
 })
 
 router.use('/search', async function (req,res) {
     const q = req.query.q;
     const hasil = q.replaceAll(" ", "+")
 
-    const browser = await puppeteer.launch();
+    const browser = await getBrowser();
     const page = await browser.newPage();
+
     await page.goto(`https://komiku.org/?post_type=manga&s=${q}`,{
         waitUntil: "domcontentloaded",
     });
@@ -131,8 +175,9 @@ router.use('/search', async function (req,res) {
 router.use('/detail/:slug',async function (req,res) {
     const param =  req.params.slug;
     
-    const browser = await puppeteer.launch();
+    const browser = await getBrowser();
     const page = await browser.newPage();
+
     await page.goto(`https://komiku.org/manga/${param}`,{
         waitUntil: "domcontentloaded",
     });
@@ -164,7 +209,7 @@ router.use('/detail/:slug',async function (req,res) {
 
             const tdLink = tdElement ? tdElement.href : null
 
-            const slug = tdLink? tdLink.slice(19) : null 
+            const slug = tdLink? tdLink.slice(19, -1) : null 
 
             return{
                 slug: slug,
@@ -208,8 +253,9 @@ router.use('/detail/:slug',async function (req,res) {
 router.use('/chapter/:slug', async function (req,res) {
     const param = req.params.slug;
 
-    const browser = await puppeteer.launch();
+    const browser = await getBrowser();
     const page = await browser.newPage();
+
     await page.goto(`https://komiku.org/${param}`,{
         waitUntil: "domcontentloaded",
     });
