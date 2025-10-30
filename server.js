@@ -17,7 +17,9 @@ app.get('/', (req,res)=>{
             "list": "/komik/list",
             "search": "/komik/search?q=keyword",
             "detail": "/komik/detail/:slug",
-            "chapter": "/komik/chapter/:slug"
+            "chapter": "/komik/chapter/:slug",
+            "all genre list": "/komik/genre/list",
+            "by genre list": "/komik/genre/:slug"
         }
     })
 })
